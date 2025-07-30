@@ -1,74 +1,67 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
+#include <commdlg.h>
+#include <windows.h>
+
+#include <algorithm>
 #include <cmath>
+#include <codecvt>
 #include <fstream>
 #include <iostream>
+#include <locale>
 #include <sstream>
 #include <string>
 #include <vector>
-#include <algorithm>
-#include <windows.h>
-#include <commdlg.h> 
+
 #include "logic.hpp"
 #include "sdl_addon.hpp"
-#include <windows.h>
-#include <commdlg.h>
-#include <locale>
-#include <codecvt>
 
-//use mylog(text) to debug code
+// use mylog(text) to debug code
 
+SDL_Color Black = {0, 0, 0, 255};
+int totallineheight = 0;
 
-SDL_Color Black = {0, 0, 0, 255 };
-int totallineheight = 0;    
-
-int main(int argc, char ** argv) {
-
-
+int main(int argc, char** argv) {
     // Initialize SDL and SDLTTF
     SDL_Init(SDL_INIT_VIDEO);
     TTF_Init();
 
     // Initialize window and renderer
-    SDL_Window * win = SDL_CreateWindow("Notepad", SDL_WINDOWPOS_CENTERED,SDL_WINDOWPOS_CENTERED, 960, 540, SDL_WINDOW_RESIZABLE);
-    SDL_Renderer * ren = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-    int winH , winW;
+    SDL_Window* win = SDL_CreateWindow("Notepad", SDL_WINDOWPOS_CENTERED,
+                                       SDL_WINDOWPOS_CENTERED, 960, 540,
+                                       SDL_WINDOW_RESIZABLE);
+    SDL_Renderer* ren = SDL_CreateRenderer(
+        win, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+    int winH, winW;
     SDL_GetWindowSize(win, &winW, &winH);
 
-    //Initialize sliders
+    // Initialize sliders
     HorizontalSlider marginX(0, 0, 150, 40, 0, 200, 40);
     HorizontalSlider marginY(200, 0, 150, 40, 0, 200, 70);
     HorizontalSlider fontsize(400, 0, 150, 40, 8, 72, 18);
     HorizontalSlider lineSpacing(600, 0, 150, 40, 100, 200, 100);
-    VerticalSlider scroll(winW-40, 0, 40, winH, 0, 100, 0);
-    
-    std::vector <TTF_Font*> fontCache;
-    for (size_t i = fontsize.minValue; i < fontsize.maxValue; i++)
-    {
-        TTF_Font * font = TTF_OpenFont("c:/windows/fonts/consola.TTf", i);
+    VerticalSlider scroll(winW - 40, 0, 40, winH, 0, 100, 0);
+
+    std::vector<TTF_Font*> fontCache;
+    for (size_t i = fontsize.minValue; i < fontsize.maxValue; i++) {
+        TTF_Font* font = TTF_OpenFont("c:/windows/fonts/consola.TTf", i);
         if (!font) {
-        std::cerr << "Failed to open font: " << TTF_GetError() << "\n";
-        return 1;    
+            std::cerr << "Failed to open font: " << TTF_GetError() << "\n";
+            return 1;
         }
         fontCache.push_back(font);
     }
-    
-    TTF_Font * font = TTF_OpenFont("c:/windows/fonts/consola.TTf", 18);
 
-    TTF_Font * settingsfont = TTF_OpenFont("c:/windows/fonts/arial.TTf", 14);
+    TTF_Font* font = fontCache[8];
+
+    TTF_Font* settingsfont = TTF_OpenFont("c:/windows/fonts/arial.TTf", 14);
     if (!settingsfont) {
         std::cerr << "Failed to open settingsfont: " << TTF_GetError() << "\n";
         return 1;
     }
 
+    SDL_Rect cursordst;
 
-
-
-
-    SDL_Rect cursordst; // = {0, 0,0,0};
-    
-    
-    
     // load a file
     std::vector<lineObj> lines;
 
@@ -79,37 +72,29 @@ int main(int argc, char ** argv) {
     while (std::getline(inputFile, fileLine)) {
         lineObj newLine;
         newLine.text = fileLine;
-        SDL_Surface * surface = TTF_RenderUTF8_Blended(font, newLine.text.c_str(), Black);
-        SDL_Texture * texture = SDL_CreateTextureFromSurface(ren, surface);
+        SDL_Surface* surface =
+            TTF_RenderUTF8_Blended(font, newLine.text.c_str(), Black);
+        SDL_Texture* texture = SDL_CreateTextureFromSurface(ren, surface);
         SDL_FreeSurface(surface);
-        newLine.texture = texture; 
+        newLine.texture = texture;
         int height, width;
-        TTF_SizeUTF8(font, newLine.text.c_str(), & width, & height);
+        TTF_SizeUTF8(font, newLine.text.c_str(), &width, &height);
         newLine.height = height;
         totallineheight += height;
-        newLine.width = width; 
+        newLine.width = width;
 
         lines.push_back(newLine);
     }
     inputFile.close();
 
-
     // initialize cursor logic
     bool showCursor = true;
     Uint32 lastToggle = SDL_GetTicks();
-    const Uint32 blinkInterval = 500; // milliseconds
+    const Uint32 blinkInterval = 500;  // milliseconds
 
     int scrollY;
-    
-
-
-    
 
     std::string mytext;
-
-
-
-
 
     bool getcurrenttext = true;
     int oldsize = 18;
@@ -117,102 +102,116 @@ int main(int argc, char ** argv) {
     int line = 0;
     int column = 0;
 
-
-
     SDL_StartTextInput();
     bool quit = false;
     SDL_Event e;
 
-
-    //Main loop
+    // Main loop
     bool typing = true;
     while (!quit) {
-
         Uint32 frameStart = SDL_GetTicks();
 
         int mouseX, mouseY;
         SDL_GetWindowSize(win, &winW, &winH);
         SDL_GetMouseState(&mouseX, &mouseY);
-        scroll.x = winW-40;
+        scroll.x = winW - 40;
 
-        while (SDL_PollEvent( & e)) {
+        while (SDL_PollEvent(&e)) {
             switch (e.type) {
                 case SDL_QUIT:
                     quit = true;
                     break;
-                case SDL_TEXTINPUT:{
-
+                case SDL_TEXTINPUT: {
                     lines[line].text.insert(column, e.text.text);
-                    update_single_line_texture( font, ren, lines, line, lines[line].text);
-                    update_cursor_position(font, lines, column, line, cursordst, marginX.Value, 1, 0, showCursor, oldsize, lineSpacing.Value /100.0 );
-                    break;}
+                    update_single_line_texture(font, ren, lines, line,
+                                               lines[line].text);
+                    update_cursor_position(
+                        font, lines, column, line, cursordst, marginX.Value, 1,
+                        0, showCursor, oldsize,
+                        lineSpacing.Value / 18 * fontsize.Value / 100.0);
+                    break;
+                }
                 case SDL_KEYDOWN:
 
                     if (e.key.keysym.sym == SDLK_LEFT) {
-
-                       update_cursor_position(font, lines, column, line, cursordst, marginX.Value, -1, 0, showCursor, oldsize,lineSpacing.Value /100.0 );                   
+                        update_cursor_position(
+                            font, lines, column, line, cursordst, marginX.Value,
+                            -1, 0, showCursor, oldsize,
+                            lineSpacing.Value / 18 * fontsize.Value / 100.0);
                     }
 
                     if (e.key.keysym.sym == SDLK_RIGHT) {
-
-                        update_cursor_position(font, lines, column, line, cursordst, marginX.Value, 1, 0, showCursor, oldsize,lineSpacing.Value /100.0 );
+                        update_cursor_position(
+                            font, lines, column, line, cursordst, marginX.Value,
+                            1, 0, showCursor, oldsize,
+                            lineSpacing.Value / 18 * fontsize.Value / 100.0);
                     }
 
-                    if (e.key.keysym.sym == SDLK_BACKSPACE ) {
-                        std::string tempText = lines[line].text ;
+                    if (e.key.keysym.sym == SDLK_BACKSPACE) {
+                        std::string tempText = lines[line].text;
                         if (!lines[line].text.empty()) {
+                            lines[line].text = tempText.substr(0, column - 1) +
+                                               tempText.substr(column);
+                            update_single_line_texture(font, ren, lines, line,
+                                                       lines[line].text);
+                            update_cursor_position(font, lines, column, line,
+                                                   cursordst, marginX.Value, -1,
+                                                   0, showCursor, oldsize,
+                                                   lineSpacing.Value / 18 *
+                                                       fontsize.Value / 100.0);
 
-                            lines[line].text = tempText.substr(0, column-1) + tempText.substr(column);
-                            update_single_line_texture( font, ren, lines, line, lines[line].text);
-                            update_cursor_position(font, lines, column, line, cursordst, marginX.Value, -1, 0,showCursor, oldsize,lineSpacing.Value /100.0 );
-
-                        }else {
-
+                        } else {
                             if (line >= 0 && line < lines.size()) {
-
-                                lines.erase(lines.begin() + line); 
-                                update_cursor_position(font, lines, column, line, cursordst, marginX.Value, 0, -1,showCursor, oldsize,lineSpacing.Value /100.0 );
+                                lines.erase(lines.begin() + line);
+                                update_cursor_position(
+                                    font, lines, column, line, cursordst,
+                                    marginX.Value, 0, -1, showCursor, oldsize,
+                                    lineSpacing.Value / 18 * fontsize.Value /
+                                        100.0);
                                 column = lines[line].text.size();
                             }
-                            
                         }
-                    if (e.key.keysym.sym == SDLK_RETURN ) {
-                        lineObj emptyline ;
-                        lines.insert(lines.begin() + line, emptyline);
-                       update_cursor_position(font, lines, column, line, cursordst, marginX.Value, 0, 1,showCursor, oldsize,lineSpacing.Value /100.0 );
-                    }    
-                        
+                        if (e.key.keysym.sym == SDLK_RETURN) {
+                            lineObj emptyline;
+                            lines.insert(lines.begin() + line, emptyline);
+                            update_cursor_position(font, lines, column, line,
+                                                   cursordst, marginX.Value, 0,
+                                                   1, showCursor, oldsize,
+                                                   lineSpacing.Value / 18 *
+                                                       fontsize.Value / 100.0);
+                        }
+
                         /*if (index >= 0 && index < vec.size()) {
-                            vec.erase(vec.begin() + index);  // removes element at index 2 (30)
+                            vec.erase(vec.begin() + index);  // removes element
+                        at index 2 (30)
                         }*/
                     }
                     /*else if (e.key.keysym.sym == SDLK_RETURN)
                     {
 
                     }*/
-                    break; 
+                    break;
 
                     break;
                 case SDL_MOUSEBUTTONDOWN:
-                    if (marginX.Value < mouseX && mouseX < winW - 40 && mouseY > marginY.Value && mouseY< winH ) {
+                    if (marginX.Value < mouseX && mouseX < winW - 40 &&
+                        mouseY > marginY.Value && mouseY < winH) {
                         getcurrenttext = true;
                         typing = true;
                     } else {
                         typing = false;
                     }
-                    
-                    
-                    
+
                     break;
                 default:
                     break;
             }
-        // Call handleEvent for each slider
-        marginX.handleEvent(e);
-        marginY.handleEvent(e);
-        fontsize.handleEvent(e);
-        scroll.handleEvent(e);
-        lineSpacing.handleEvent(e);
+            // Call handleEvent for each slider
+            marginX.handleEvent(e);
+            marginY.handleEvent(e);
+            fontsize.handleEvent(e);
+            scroll.handleEvent(e);
+            lineSpacing.handleEvent(e);
         }
 
         // Update slider values based on dragging
@@ -221,31 +220,30 @@ int main(int argc, char ** argv) {
         fontsize.update();
         scroll.update();
         lineSpacing.update();
-        
-        scrollY = (scroll.Value / 100.0)* (totallineheight+marginY.Value);
-        
+
+        scrollY = (scroll.Value / 100.0) * (totallineheight + marginY.Value);
+
         SDL_SetRenderDrawColor(ren, 71, 76, 84, 255);
         SDL_RenderClear(ren);
         SDL_SetRenderDrawColor(ren, 255, 255, 255, 255);
-        SDL_Rect typingArea = {marginX.Value-5,marginY.Value,winW,winH};
+        SDL_Rect typingArea = {marginX.Value - 5, marginY.Value, winW, winH};
         SDL_RenderFillRect(ren, &typingArea);
 
-        SDL_Color Black = {0, 0, 0, 255 };
-        
-         // refers to each line position in the loop
-        for (size_t i = 0; i < lines.size(); i++) {
-            int line_y = i*oldsize*lineSpacing.Value /100.0 + marginY.Value - scrollY ; 
-            // line rendering condition
-            if ( marginY.Value < line_y ) {
+        SDL_Color Black = {0, 0, 0, 255};
 
-                SDL_Rect dstLine = {marginX.Value, line_y -lines[i].height, lines[i].width, lines[i].height};
-                SDL_RenderCopy(ren, lines[i].texture, NULL, & dstLine);
+        for (size_t i = 0; i < lines.size(); i++) {
+            int line_y =
+                i * oldsize * lineSpacing.Value / 18 * fontsize.Value / 100.0 +
+                marginY.Value - scrollY;
+            // line rendering condition if line is outside visible are no need
+            // to render it
+            if (marginY.Value < line_y) {
+                SDL_Rect dstLine = {marginX.Value, line_y - lines[i].height,
+                                    lines[i].width, lines[i].height};
+                SDL_RenderCopy(ren, lines[i].texture, NULL, &dstLine);
             }
 
-
-            if (line_y   > mouseY && getcurrenttext) {
-                           
-                
+            if (line_y > mouseY && getcurrenttext) {
                 int cursorX = marginX.Value;
                 int textX = marginX.Value;
                 int mouseRelativeX = mouseX - marginX.Value;
@@ -278,25 +276,25 @@ int main(int argc, char ** argv) {
                 } else {
                     cursorX = bestX;
                 }
-                cursordst = {cursorX, line_y-oldsize,2, oldsize};
+                cursordst = {cursorX, line_y - oldsize, 2, oldsize};
                 getcurrenttext = false;
-
-            } 
+            }
         }
-        // render the sliders 
+
+        // render the sliders
         marginX.draw(ren, settingsfont);
         marginY.draw(ren, settingsfont);
         fontsize.draw(ren, settingsfont);
         scroll.draw(ren, settingsfont);
         lineSpacing.draw(ren, settingsfont);
 
-        //check if the font size changed
+        // check if the font size changed
         if (fontsize.dragging) {
-            font = fontCache[fontsize.Value -fontsize.minValue]; 
+            font = fontCache[fontsize.Value - fontsize.minValue];
             updatetexture(font, ren, lines, totallineheight);
         }
-        
-        //calculate the time of execution of each frame
+
+        // calculate the time of execution of each frame
         Uint32 now = SDL_GetTicks();
         if (now - lastToggle >= blinkInterval) {
             showCursor = !showCursor;
@@ -309,16 +307,17 @@ int main(int argc, char ** argv) {
             SDL_RenderFillRect(ren, &cursordst);
         }
 
-
+        // Presnet everything at last
         SDL_RenderPresent(ren);
-
-
-      
     }
 
     // Clean everything
     SDL_StopTextInput();
-    TTF_CloseFont(font);
+    for (size_t i = 0; i < fontCache.size(); i++) {
+        TTF_CloseFont(fontCache[i]);
+    }
+    fontCache.clear();
+
     TTF_CloseFont(settingsfont);
     SDL_DestroyRenderer(ren);
     SDL_DestroyWindow(win);
@@ -327,3 +326,4 @@ int main(int argc, char ** argv) {
 
     return 0;
 }
+//most of these stuff is copy pasting from documenttation and whatever works
