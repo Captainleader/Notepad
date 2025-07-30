@@ -66,17 +66,19 @@ int main(int argc, char ** argv) {
 
 
     SDL_Rect cursordst; // = {0, 0,0,0};
-    OpenFileDialog();
-    FileDialogResult myfile;
+    
+    
+    
     // load a file
     std::vector<lineObj> lines;
-    std::wifstream inputFile(myfile.filePath.c_str());
-    std::wstring fileLine;
+
+    auto res = OpenFileDialog();
+    std::wcout << res.filePath << std::endl;
+    std::ifstream inputFile(res.filePath.c_str());
+    std::string fileLine;
     while (std::getline(inputFile, fileLine)) {
         lineObj newLine;
-        std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
-        std::string temptext = converter.to_bytes(fileLine);
-        newLine.text = temptext;
+        newLine.text = fileLine;
         SDL_Surface * surface = TTF_RenderUTF8_Blended(font, newLine.text.c_str(), Black);
         SDL_Texture * texture = SDL_CreateTextureFromSurface(ren, surface);
         SDL_FreeSurface(surface);
@@ -289,10 +291,11 @@ int main(int argc, char ** argv) {
         lineSpacing.draw(ren, settingsfont);
 
         //check if the font size changed
-        /*if (fontsize.dragging) {
+        if (fontsize.dragging) {
             font = fontCache[fontsize.Value -fontsize.minValue]; 
+            updatetexture(font, ren, lines, totallineheight);
         }
-        */
+        
         //calculate the time of execution of each frame
         Uint32 now = SDL_GetTicks();
         if (now - lastToggle >= blinkInterval) {
