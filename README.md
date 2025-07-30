@@ -1,0 +1,20 @@
+# SDL Text Editor / Viewer
+
+A lightweight UTF-8-capable text renderer and UI application using **SDL2** and **SDL_ttf**, with support for multiple languages, cursive scripts (like Arabic), sliders, and interactive buttons.
+
+## Features
+
+- UTF-8 text rendering (Arabic, Japanese, English, etc.)
+- Line numbers and text surfaces
+- Adjustable line spacing using a horizontal slider
+- Custom buttons with event handling and visual feedback
+- TTF font support (Noto, Segoe UI, Arial, etc.)
+- SDL-based rendering loop
+- C++ lambda-based event handling
+- High-DPI-aware layout
+
+## Dependencies
+
+- SDL2
+- SDL2_ttf
+- C++17 or later
