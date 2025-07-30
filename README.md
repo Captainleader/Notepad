@@ -10,7 +10,6 @@ A lightweight UTF-8-capable text renderer and UI application using **SDL2** and 
 - TTF font support (Noto, Segoe UI, Arial, etc.)
 - SDL-based rendering loop
 - C++ lambda-based event handling
-- High-DPI-aware layout
 
 ## Dependencies
 
