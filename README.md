@@ -5,7 +5,6 @@ A lightweight UTF-8-capable text renderer and UI application using **SDL2** and 
 ## Features
 
 - UTF-8 text rendering (Arabic, Japanese, English, etc.)
-- Line numbers and text surfaces
 - Adjustable line spacing using a horizontal slider
 - TTF font support (Noto, Segoe UI, Arial, etc.)
 - SDL-based rendering loop
