@@ -10,9 +10,10 @@ A lightweight UTF-8-capable text renderer and UI application using **SDL2** and 
 - TTF font support (Noto, Segoe UI, Arial, etc.)
 - SDL-based rendering loop
 - C++ lambda-based event handling
-## Stuff 
--On opening there's an open file popup
--Changes to file are only saved after closing to program
+## Stuff
+
+- On opening there's an open file popup
+- Changes to file are only saved after closing to program
 
 ## Dependencies
 
