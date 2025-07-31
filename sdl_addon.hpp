@@ -1,16 +1,14 @@
-#pragma once
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_ttf.h>
-
-   
-// open a file
+#include <windows.h>
+#include <commdlg.h>
+#include <string>
+#include <iostream>
 
 struct FileDialogResult {
     bool success;
     std::wstring filePath;
 };
 
-inline FileDialogResult OpenFileDialog(HWND owner = nullptr) {
+FileDialogResult OpenFileDialog(HWND owner = nullptr) {
     wchar_t fileName[MAX_PATH] = L"";
 
     OPENFILENAMEW ofn = {0};
@@ -18,18 +16,20 @@ inline FileDialogResult OpenFileDialog(HWND owner = nullptr) {
     ofn.hwndOwner = owner;
     ofn.lpstrFile = fileName;
     ofn.nMaxFile = MAX_PATH;
-    ofn.lpstrFilter = L"All Files\0*.*\0";
+    ofn.lpstrFilter = L"Text Files (*.txt)\0*.txt\0All Files (*.*)\0*.*\0";
     ofn.nFilterIndex = 1;
     ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
 
     bool result = GetOpenFileNameW(&ofn) == TRUE;
-
-    if (result) {
-        return { true, std::wstring(fileName) };
-    } else {
-        return { false, L"" };
-    }
+    return { result, result ? std::wstring(fileName) : L"" };
 }
 
-
-
+int main() {
+    FileDialogResult result = OpenFileDialog();
+    if (result.success) {
+        std::wcout << L"Selected file: " << result.filePath << std::endl;
+    } else {
+        std::wcout << L"No file selected." << std::endl;
+    }
+    return 0;
+}
