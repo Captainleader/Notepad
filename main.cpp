@@ -1,7 +1,8 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
-#include <commdlg.h>
 #include <windows.h>
+#include <commdlg.h>
+
 
 #include <algorithm>
 #include <cmath>
@@ -12,7 +13,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
-
+#include <filesystem> 
 #include "logic.hpp"
 #include "sdl_addon.hpp"
 
@@ -318,6 +319,17 @@ int main(int argc, char** argv) {
     }
     fontCache.clear();
 
+    //save up closing
+    std::ofstream out(std::filesystem::path(res.filePath));
+    for (size_t i = 0; i < lines.size(); i++)
+    {
+        out << lines[i].text << "\n";
+        SDL_DestroyTexture(lines[i].texture);
+    }
+    lines.clear();
+
+    out.close();
+
     TTF_CloseFont(settingsfont);
     SDL_DestroyRenderer(ren);
     SDL_DestroyWindow(win);
@@ -326,4 +338,3 @@ int main(int argc, char** argv) {
 
     return 0;
 }
-//most of these stuff is copy pasting from documenttation and whatever works
