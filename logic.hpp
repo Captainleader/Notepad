@@ -14,8 +14,6 @@ inline void mylog(T text) {
 }
 
 
-
-
 //Line class containign text / texture / height / width
 class lineObj {
     public:
@@ -230,8 +228,8 @@ inline void update_single_line_texture(TTF_Font* font, SDL_Renderer* ren, std::v
         lines[line].height =surface->h;
         SDL_FreeSurface(surface);
     } else {
-        lines[line].texture = nullptr;
         SDL_DestroyTexture(lines[line].texture);
+        lines[line].texture = nullptr; 
         lines[line].width = 0 ;
         lines[line].height = 0 ;
     }
@@ -295,3 +293,62 @@ inline void ClearVector(std::vector<lineObj>& lines) {
         line.needsUpdate = true;
     }
 }
+
+
+// A button struct
+
+struct Button
+{
+    SDL_Renderer *ren;
+    SDL_Rect box;
+    
+    SDL_Rect title_box;
+    std::string title;
+    bool isClicked = false;
+    SDL_Texture *texture;
+    TTF_Font *font;
+    SDL_Rect shadow_box;
+    Button(SDL_Renderer *ren2, TTF_Font *font2, SDL_Rect mybox, std::string text){
+        box = mybox; title = text; ren = ren2; font = font2;
+        SDL_Surface * surface =  TTF_RenderUTF8_Blended(font, title.c_str(), {255, 255, 255, 255} );
+        
+        texture = SDL_CreateTextureFromSurface(ren,surface);
+        title_box.h = surface->h;  title_box.w = surface->w;
+        title_box.x = box.x + (box.w - title_box.w )/2;
+        title_box.y = box.y + (box.h - title_box.h )/2;
+
+        shadow_box = box;
+        shadow_box.w += 2;
+        shadow_box.h += 2;
+    }
+    
+    SDL_Color color = {76, 175, 80, 255};
+    
+
+    void draw() {
+        SDL_SetRenderDrawColor(ren, 55, 125, 72, 255);
+        SDL_RenderFillRect(ren, &shadow_box);
+
+        SDL_SetRenderDrawColor(ren, color.r, color.g, color.b, color.a);
+        SDL_RenderFillRect(ren, &box); 
+        
+        SDL_SetRenderDrawColor(ren, 0, 0, 0, 255);
+        SDL_RenderCopy(ren, texture, NULL, &title_box);  
+    }
+    void click_event(SDL_Event & e){
+    
+        SDL_Point Mouse = {e.button.x, e.button.y};
+        if (SDL_PointInRect(&Mouse,&box) && e.type == SDL_MOUSEBUTTONDOWN) {
+
+            color = {69, 151, 160, 255};
+            isClicked = true;
+            
+
+        } else if (e.type == SDL_MOUSEBUTTONUP) {
+
+            color = {76, 175, 80, 255};
+        } 
+    } 
+
+    
+};
