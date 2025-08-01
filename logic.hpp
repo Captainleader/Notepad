@@ -1,5 +1,4 @@
 #pragma once
-
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include <cmath>
@@ -9,7 +8,6 @@
 #include <string>
 #include <vector>
 #include <algorithm>
-
 template<typename T> 
 inline void mylog(T text) {
     std::cout << text << std::endl;
@@ -25,6 +23,7 @@ class lineObj {
         SDL_Texture* texture;
         int height;
         int width;
+        bool needsUpdate = true;
     };
 
 //Handle all sliders logic
@@ -218,33 +217,13 @@ public:
 
 
 
-//Updates the files texture to rerender
-inline void updatetexture(TTF_Font* font, SDL_Renderer* ren, std::vector<lineObj>& lines,int & totallineheight) {
-    SDL_Color Black = {0, 0, 0, 255}; // Define black color
-    totallineheight = 0;
-    for (size_t i = 0; i < lines.size(); i++) {
-        SDL_Surface* surface = TTF_RenderUTF8_Blended(font, lines[i].text.c_str(), Black);
-        if (!surface) continue;
-
-        SDL_Texture* texture = SDL_CreateTextureFromSurface(ren, surface);
-        SDL_FreeSurface(surface);
-
-        lines[i].texture = texture;
-
-        int width, height;
-        TTF_SizeUTF8(font, lines[i].text.c_str(), &width, &height);
-        lines[i].height = height;
-        totallineheight += height;
-        lines[i].width = width;
-    }
-}
-
 // only updates the information of one line call updatetexture() to handle all lines
-inline void update_single_line_texture(TTF_Font* font, SDL_Renderer* ren, std::vector<lineObj>& lines,int line, std::string newtext) {
+inline void update_single_line_texture(TTF_Font* font, SDL_Renderer* ren, std::vector<lineObj>& lines, int line) {
     SDL_Color Black = {0, 0, 0, 255}; 
-    if (!newtext.empty())
+    if (!lines[line].text.empty())
     {
-        SDL_Surface* surface = TTF_RenderUTF8_Blended(font, newtext.c_str(), Black);
+        SDL_DestroyTexture(lines[line].texture);
+        SDL_Surface* surface = TTF_RenderUTF8_Blended(font, lines[line].text.c_str(), Black);
         SDL_Texture* texture = SDL_CreateTextureFromSurface(ren, surface);
         lines[line].texture = texture;
         lines[line].width = surface->w;
@@ -252,6 +231,7 @@ inline void update_single_line_texture(TTF_Font* font, SDL_Renderer* ren, std::v
         SDL_FreeSurface(surface);
     } else {
         lines[line].texture = nullptr;
+        SDL_DestroyTexture(lines[line].texture);
         lines[line].width = 0 ;
         lines[line].height = 0 ;
     }
@@ -260,9 +240,9 @@ inline void update_single_line_texture(TTF_Font* font, SDL_Renderer* ren, std::v
 
 
 inline void update_cursor_position(TTF_Font * font, std::vector<lineObj>& lines,
-     int & i, int & line, SDL_Rect &cursor,
+     int & column, int & line, SDL_Rect &cursor,
      int margin, int moveX, int moveY, bool &showCursor,
-      int olsize , double spacing) {
+      int lineSpacingPercentage) {
     // 'i' is the current cursor position in a line
     // 'move' is how many chars it moves 1 , 2 , -1 etc...
     // 'line' is the line row
@@ -270,27 +250,25 @@ inline void update_cursor_position(TTF_Font * font, std::vector<lineObj>& lines,
     if (moveX != 0) {
         if (moveX > 0) {
 
-            if (i == lines[line].text.size()) {
-                TTF_SizeUTF8(font, lines[line].text.substr(0,i).c_str() , nullptr , &h);
+            if (column == lines[line].text.size()) {
                 line += 1 ;
-                i = 0;
+                column = 0;
                 w = 0;
-                cursor.y += h;
-            } else if ( i < lines[line].text.size()) {
-                i += moveX;
-                TTF_SizeUTF8(font, lines[line].text.substr(0,i).c_str() , &w , nullptr);
+                cursor.y += lineSpacingPercentage;
+            } else if ( column < lines[line].text.size()) {
+                column += moveX;
+                TTF_SizeUTF8(font, lines[line].text.substr(0,column).c_str() , &w , nullptr);
             }
         } else {
             
-            if (i == 0) {
-                TTF_SizeUTF8(font, lines[line].text.c_str() , nullptr , &h);
-                cursor.y -= h;
+            if (column == 0) {
+                cursor.y -= lineSpacingPercentage;
                 line -= 1 ;
-                i = lines[line].text.size();
+                column = lines[line].text.size();
                 TTF_SizeUTF8(font, lines[line].text.c_str() , &w , nullptr);
-            } else if (i > 0) {
-                i += moveX; // because moveX is already negative lmao
-                TTF_SizeUTF8(font, lines[line].text.substr(0,i).c_str() , &w , nullptr);
+            } else if (column > 0) {
+                column += moveX; // because moveX is already negative lmao
+                TTF_SizeUTF8(font, lines[line].text.substr(0,column).c_str() , &w , nullptr);
             }
         }
         cursor.x = w + margin;
@@ -298,14 +276,22 @@ inline void update_cursor_position(TTF_Font * font, std::vector<lineObj>& lines,
     if (moveY != 0) {
         if (moveY > 0 && line < lines.size() ) {
             line += 1;
-            cursor.y += olsize*spacing;
+            cursor.y += lineSpacingPercentage;
         } else if ( moveY < 0 && line > 0) {
             line -= 1;
-            cursor.y -= olsize*spacing;
+            cursor.y -= lineSpacingPercentage;
         } 
         
 
     }
 
     showCursor = true;
+}
+
+// Clear the lines vector
+
+inline void ClearVector(std::vector<lineObj>& lines) {
+    for (auto& line : lines) {
+        line.needsUpdate = true;
+    }
 }
