@@ -16,7 +16,7 @@ FileDialogResult OpenFileDialog(HWND owner = nullptr) {
     ofn.hwndOwner = owner;
     ofn.lpstrFile = fileName;
     ofn.nMaxFile = MAX_PATH;
-    ofn.lpstrFilter = L"Text Files (*.txt)\0*.txt\0All Files (*.*)\0*.*\0";
+    ofn.lpstrFilter = L"All Files (*.*)\0*.*\0\0";
     ofn.nFilterIndex = 1;
     ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
 
